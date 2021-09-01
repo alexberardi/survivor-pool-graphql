@@ -5,6 +5,7 @@ import { context } from './context'
 const server = new ApolloServer({
   schema: schema,
   context: context,
+  playground: true,
 })
 const PORT = process.env.PORT || 3000
 
