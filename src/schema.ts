@@ -1,4 +1,5 @@
 import {
+  arg,
   intArg,
   makeSchema,
   objectType,
@@ -9,6 +10,7 @@ import {
   stringArg,
   booleanArg,
   floatArg,
+  list,
 } from 'nexus'
 import { DateTimeResolver } from 'graphql-scalars'
 import { Context } from './context'
@@ -17,27 +19,25 @@ import { GameService } from './services/game'
 import { StadiumService } from './services/stadium'
 import { PlayerTeamService } from './services/playerTeam'
 import { PickService } from './services/pick'
-import { argsToArgsConfig } from 'graphql/type/definition'
 import { AdminMessageService } from './services/adminMessage'
 import { LeagueService } from './services/league'
+import { ApolloError } from 'apollo-server'
 export const DateTime = asNexusMethod(DateTimeResolver, 'date')
 
 const Query = objectType({
   name: 'Query',
   definition(t) {
-    t.nonNull.list.field('adminMessages', {
-      type: 'AdminMessage',
-      resolve: (_parent, _args, context: Context) => {
-        return context.prisma.adminMessage.findMany()
-      },
-    })
+    // t.nonNull.list.field('adminMessages', {
+    //   type: 'AdminMessage',
+    //   resolve: (_parent, _args, context: Context) => {
+    //     return context.prisma.adminMessage.findMany()
+    //   },
+    // })
 
     t.nonNull.list.field('adminMessagesGetVisible', {
       type: 'AdminMessage',
       resolve: (_parent, _args, context: Context) => {
-        return context.prisma.adminMessage.findMany({
-          where: { visible: true },
-        })
+        return context.prisma.adminMessage.findMany()
       },
     })
 
@@ -143,43 +143,51 @@ const Mutation = objectType({
         return await GameService.updateGames(context)
       },
     })
-    t.list.nonNull.field('leagueCreate', {
+    t.nonNull.field('leagueCreate', {
       type: 'League',
       args: {
-        name: nonNull(stringArg()),
-        description: nonNull(stringArg()),
-        price: nonNull(floatArg()),
-        leagueTypeId: nonNull(stringArg()),
-        startWeek: nonNull(intArg()),
-        completed: nonNull(booleanArg()),
-        season: nonNull(intArg()),
+        data: nonNull(
+          arg({
+            type: 'LeagueCreateInput',
+          }),
+        ),
       },
       resolve: async (_, args, context: Context) => {
         return await LeagueService.createLeague(
           context,
-          args.name,
-          args.description,
-          args.price,
-          args.leagueTypeId,
-          args.startWeek,
-          args.completed,
-          args.season,
+          args.data.name,
+          args.data.description,
+          args.data.price,
+          args.data.leagueTypeId,
+          args.data.startWeek,
+          args.data.completed,
+          args.data.season,
         )
       },
     })
 
-    t.list.nonNull.field('leagueUpdate', {
+    t.nonNull.field('leagueUpdate', {
       type: 'League',
       args: {
-        id: nonNull(stringArg()),
-        name: nonNull(stringArg()),
-        description: nonNull(stringArg()),
-        leagueTypeId: nonNull(stringArg()),
-        startWeek: nonNull(intArg()),
-        completed: nonNull(booleanArg()),
-        season: nonNull(intArg()),
+        data: nonNull(
+          arg({
+            type: 'LeagueUpdateInput',
+          }),
+        ),
       },
-      resolve: async (_, args, context: Context) => {},
+      resolve: async (_, args, context: Context) => {
+        return await LeagueService.updateLeague(
+          context,
+          args.data.id,
+          args.data.name,
+          args.data.description,
+          args.data.price,
+          args.data.leagueTypeId,
+          args.data.startWeek,
+          args.data.completed,
+          args.data.season,
+        )
+      },
     })
 
     t.list.nonNull.field('stadiumsPopulate', {
@@ -277,10 +285,10 @@ const AdminMessage = objectType({
     t.nonNull.string('message')
     t.nonNull.boolean('visible')
     t.nonNull.string('type')
-    t.nonNull.field('user', {
+    t.field('user', {
       type: 'User',
       resolve: (parent, _, context: Context) => {
-        return context.prisma.adminMessage
+        return context.prisma.playerTeam
           .findUnique({
             where: { id: parent.id },
           })
@@ -293,20 +301,19 @@ const AdminMessage = objectType({
 const Game = objectType({
   name: 'Game',
   definition(t) {
-    t.nonNull.string('id'),
-      t.nonNull.string('homeTeamId'),
-      t.nonNull.int('homeTeamScore'),
-      t.nonNull.string('awayTeamId'),
-      t.nonNull.int('awayTeamScore'),
-      t.nonNull.string('dayOfWeek'),
-      t.nonNull.date('gameDate'),
-      t.nonNull.string('quarter'),
-      t.nonNull.string('quarterTime'),
-      t.nonNull.int('week'),
-      t.nonNull.boolean('started'),
-      t.nonNull.string('stadiumId'),
-      t.nonNull.string('oddsId'),
-      t.nonNull.int('espnGameId')
+    t.nonNull.string('id'), t.nonNull.string('homeTeamId')
+    t.nonNull.int('homeTeamScore')
+    t.nonNull.string('awayTeamId')
+    t.nonNull.int('awayTeamScore')
+    t.nonNull.string('dayOfWeek')
+    t.nonNull.date('gameDate')
+    t.nonNull.string('quarter')
+    t.nonNull.string('quarterTime')
+    t.nonNull.int('week')
+    t.nonNull.boolean('started')
+    t.nonNull.string('stadiumId')
+    t.nonNull.string('oddsId')
+    t.nonNull.int('espnGameId')
     t.field('homeTeam', {
       type: 'NflTeam',
       resolve: (parent, _, context: Context) => {
@@ -316,47 +323,37 @@ const Game = objectType({
           })
           .homeTeam()
       },
-    }),
-      t.field('awayTeam', {
-        type: 'NflTeam',
-        resolve: (parent, _, context: Context) => {
-          return context.prisma.game
-            .findUnique({
-              where: { id: parent.id },
-            })
-            .awayTeam()
-        },
-      }),
-      t.field('stadium', {
-        type: 'Stadium',
-        resolve: (parent, _, context: Context) => {
-          return context.prisma.game
-            .findUnique({
-              where: { id: parent.id },
-            })
-            .stadium()
-        },
-      }),
-      t.field('odds', {
-        type: 'Odds',
-        resolve: (parent, _, context: Context) => {
-          return context.prisma.game
-            .findUnique({
-              where: { id: parent.id },
-            })
-            .odds()
-        },
-      }),
-      t.nonNull.list.nonNull.field('picks', {
-        type: 'Pick',
-        resolve: (parent, _, context: Context) => {
-          return context.prisma.game
-            .findUnique({
-              where: { id: parent.id },
-            })
-            .picks()
-        },
-      })
+    })
+    t.field('awayTeam', {
+      type: 'NflTeam',
+      resolve: (parent, _, context: Context) => {
+        return context.prisma.game
+          .findUnique({
+            where: { id: parent.id },
+          })
+          .awayTeam()
+      },
+    })
+    t.field('stadium', {
+      type: 'Stadium',
+      resolve: (parent, _, context: Context) => {
+        return context.prisma.game
+          .findUnique({
+            where: { id: parent.id },
+          })
+          .stadium()
+      },
+    })
+    t.nonNull.list.nonNull.field('picks', {
+      type: 'Pick',
+      resolve: (parent, _, context: Context) => {
+        return context.prisma.game
+          .findUnique({
+            where: { id: parent.id },
+          })
+          .picks()
+      },
+    })
   },
 })
 
@@ -370,17 +367,17 @@ const League = objectType({
     t.nonNull.string('leagueTypeId')
     t.nonNull.int('startWeek')
     t.nonNull.boolean('completed')
-    t.nonNull.int('season'),
-      t.nonNull.field('leagueType', {
-        type: 'LeagueType',
-        resolve: (parent, _, context: Context) => {
-          return context.prisma.league
-            .findUnique({
-              where: { id: parent.id },
-            })
-            .leagueType()
-        },
-      })
+    t.nonNull.int('season')
+    t.field('leagueType', {
+      type: 'LeagueType',
+      resolve: (parent, _, context: Context) => {
+        return context.prisma.league
+          .findUnique({
+            where: { id: parent.id },
+          })
+          .leagueType()
+      },
+    })
     t.nonNull.list.nonNull.field('playerTeams', {
       type: 'PlayerTeam',
       resolve: (parent, _, context: Context) => {
@@ -461,7 +458,7 @@ const Odds = objectType({
     t.nonNull.string('espnGameId')
     t.nonNull.string('details')
     t.nonNull.float('overUnder')
-    t.nonNull.list.nonNull.field('games', {
+    t.nonNull.list.nonNull.field('game', {
       type: 'Game',
       resolve: (parent, _, context: Context) => {
         return context.prisma.odds
@@ -482,7 +479,7 @@ const Pick = objectType({
     t.nonNull.string('gameId')
     t.nonNull.int('week')
     t.nonNull.string('nflTeamId')
-    t.nonNull.field('playerTeam', {
+    t.field('playerTeam', {
       type: 'PlayerTeam',
       resolve: (parent, _, context: Context) => {
         return context.prisma.pick
@@ -491,27 +488,27 @@ const Pick = objectType({
           })
           .playerTeam()
       },
-    }),
-      t.nonNull.field('game', {
-        type: 'Game',
-        resolve: (parent, _, context: Context) => {
-          return context.prisma.pick
-            .findUnique({
-              where: { id: parent.id },
-            })
-            .game()
-        },
-      }),
-      t.nonNull.field('nflTeam', {
-        type: 'NflTeam',
-        resolve: (parent, _, context: Context) => {
-          return context.prisma.pick
-            .findUnique({
-              where: { id: parent.id },
-            })
-            .nflTeam()
-        },
-      })
+    })
+    t.field('game', {
+      type: 'Game',
+      resolve: (parent, _, context: Context) => {
+        return context.prisma.pick
+          .findUnique({
+            where: { id: parent.id },
+          })
+          .game()
+      },
+    })
+    t.field('nflTeam', {
+      type: 'NflTeam',
+      resolve: (parent, _, context: Context) => {
+        return context.prisma.pick
+          .findUnique({
+            where: { id: parent.id },
+          })
+          .nflTeam()
+      },
+    })
   },
 })
 
@@ -525,7 +522,7 @@ const PlayerTeam = objectType({
     t.nonNull.boolean('active')
     t.nonNull.boolean('paid')
     t.nonNull.int('streak')
-    t.nonNull.field('league', {
+    t.field('league', {
       type: 'League',
       resolve: (parent, _, context: Context) => {
         return context.prisma.playerTeam
@@ -534,27 +531,27 @@ const PlayerTeam = objectType({
           })
           .league()
       },
-    }),
-      t.nonNull.field('user', {
-        type: 'User',
-        resolve: (parent, _, context: Context) => {
-          return context.prisma.playerTeam
-            .findUnique({
-              where: { id: parent.id },
-            })
-            .user()
-        },
-      }),
-      t.nonNull.list.nonNull.field('picks', {
-        type: 'Pick',
-        resolve: (parent, _, context: Context) => {
-          return context.prisma.playerTeam
-            .findUnique({
-              where: { id: parent.id },
-            })
-            .picks()
-        },
-      })
+    })
+    t.field('user', {
+      type: 'User',
+      resolve: (parent, _, context: Context) => {
+        return context.prisma.playerTeam
+          .findUnique({
+            where: { id: parent.id },
+          })
+          .user()
+      },
+    })
+    t.nonNull.list.nonNull.field('picks', {
+      type: 'Pick',
+      resolve: (parent, _, context: Context) => {
+        return context.prisma.playerTeam
+          .findUnique({
+            where: { id: parent.id },
+          })
+          .picks()
+      },
+    })
   },
 })
 
@@ -585,36 +582,36 @@ const User = objectType({
     t.nonNull.string('id')
     t.string('name')
     t.nonNull.string('email')
-    t.nonNull.list.nonNull.field('adminMessages', {
+    t.nonNull.list.field('adminMessages', {
       type: 'AdminMessage',
-      resolve: (parent, _, context: Context) => {
+      resolve: async (parent, _, context: Context) => {
         return context.prisma.user
           .findUnique({
             where: { id: parent.id },
           })
           .adminMessages()
       },
-    }),
-      t.nonNull.list.nonNull.field('userMessages', {
-        type: 'UserMessage',
-        resolve: (parent, _, context: Context) => {
-          return context.prisma.user
-            .findUnique({
-              where: { id: parent.id },
-            })
-            .userMessages()
-        },
-      }),
-      t.nonNull.list.nonNull.field('playerTeams', {
-        type: 'PlayerTeam',
-        resolve: (parent, _, context: Context) => {
-          return context.prisma.user
-            .findUnique({
-              where: { id: parent.id },
-            })
-            .playerTeams()
-        },
-      })
+    })
+    t.nonNull.list.nonNull.field('userMessages', {
+      type: 'UserMessage',
+      resolve: async (parent, _, context: Context) => {
+        return await context.prisma.user
+          .findUnique({
+            where: { id: parent.id },
+          })
+          .userMessages()
+      },
+    })
+    t.nonNull.list.nonNull.field('playerTeams', {
+      type: 'PlayerTeam',
+      resolve: (parent, _, context: Context) => {
+        return context.prisma.user
+          .findUnique({
+            where: { id: parent.id },
+          })
+          .playerTeams()
+      },
+    })
   },
 })
 
@@ -628,7 +625,7 @@ const UserMessage = objectType({
     t.nonNull.boolean('read')
     t.nonNull.date('readDate')
     t.nonNull.string('userId')
-    t.nonNull.field('messageType', {
+    t.field('messageType', {
       type: 'UserMessageType',
       resolve: (parent, _, context: Context) => {
         return context.prisma.userMessage
@@ -637,17 +634,17 @@ const UserMessage = objectType({
           })
           .messageType()
       },
-    }),
-      t.nonNull.field('user', {
-        type: 'User',
-        resolve: (parent, _, context: Context) => {
-          return context.prisma.userMessage
-            .findUnique({
-              where: { id: parent.id },
-            })
-            .user()
-        },
-      })
+    })
+    t.field('user', {
+      type: 'User',
+      resolve: (parent, _, context: Context) => {
+        return context.prisma.userMessage
+          .findUnique({
+            where: { id: parent.id },
+          })
+          .user()
+      },
+    })
   },
 })
 
@@ -699,6 +696,33 @@ const UserCreateInput = inputObjectType({
   },
 })
 
+const LeagueCreateInput = inputObjectType({
+  name: 'LeagueCreateInput',
+  definition(t) {
+    t.nonNull.string('name')
+    t.nonNull.string('description')
+    t.nonNull.float('price')
+    t.nonNull.string('leagueTypeId')
+    t.nonNull.int('startWeek')
+    t.nonNull.boolean('completed')
+    t.nonNull.int('season')
+  },
+})
+
+const LeagueUpdateInput = inputObjectType({
+  name: 'LeagueUpdateInput',
+  definition(t) {
+    t.nonNull.string('id')
+    t.nonNull.string('name')
+    t.nonNull.string('description')
+    t.nonNull.float('price')
+    t.nonNull.string('leagueTypeId')
+    t.nonNull.int('startWeek')
+    t.nonNull.boolean('completed')
+    t.nonNull.int('season')
+  },
+})
+
 export const schema = makeSchema({
   types: [
     Query,
@@ -706,6 +730,8 @@ export const schema = makeSchema({
     AdminMessage,
     Game,
     League,
+    LeagueCreateInput,
+    LeagueUpdateInput,
     LeagueType,
     NflTeam,
     Odds,

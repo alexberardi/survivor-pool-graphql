@@ -6,7 +6,7 @@ type AdminMessage {
   id: String!
   message: String!
   type: String!
-  user: User!
+  user: User
   userId: String!
   visible: Boolean!
 }
@@ -27,7 +27,6 @@ type Game {
   homeTeamId: String!
   homeTeamScore: Int!
   id: String!
-  odds: Odds
   oddsId: String!
   picks: [Pick!]!
   quarter: String!
@@ -42,10 +41,20 @@ type League {
   completed: Boolean!
   description: String!
   id: String!
-  leagueType: LeagueType!
+  leagueType: LeagueType
   leagueTypeId: String!
   name: String!
   playerTeams: [PlayerTeam!]!
+  price: Float!
+  season: Int!
+  startWeek: Int!
+}
+
+input LeagueCreateInput {
+  completed: Boolean!
+  description: String!
+  leagueTypeId: String!
+  name: String!
   price: Float!
   season: Int!
   startWeek: Int!
@@ -58,12 +67,23 @@ type LeagueType {
   name: String!
 }
 
+input LeagueUpdateInput {
+  completed: Boolean!
+  description: String!
+  id: String!
+  leagueTypeId: String!
+  name: String!
+  price: Float!
+  season: Int!
+  startWeek: Int!
+}
+
 type Mutation {
   adminMessageCreate(message: String!, type: String!, userId: String!, visible: Boolean!): AdminMessage!
   adminMessageUpdate(id: String!, message: String!, type: String!, userId: String!, visible: Boolean!): AdminMessage!
   gamesUpdate: [Game!]
-  leagueCreate(completed: Boolean!, description: String!, leagueTypeId: String!, name: String!, price: Float!, season: Int!, startWeek: Int!): [League!]
-  leagueUpdate(completed: Boolean!, description: String!, id: String!, leagueTypeId: String!, name: String!, season: Int!, startWeek: Int!): [League!]
+  leagueCreate(data: LeagueCreateInput!): League!
+  leagueUpdate(data: LeagueUpdateInput!): League!
   nflTeamsPopulate: [NflTeam!]
   pickMake(gameId: String!, nflTeamId: String!, playerTeamId: String!, week: Int!): Pick!
   playerTeamCreate(leagueId: String!, name: String!, userId: String!): PlayerTeam!
@@ -87,18 +107,18 @@ type NflTeam {
 type Odds {
   details: String!
   espnGameId: String!
-  games: [Game!]!
+  game: [Game!]!
   id: String!
   overUnder: Float!
 }
 
 type Pick {
-  game: Game!
+  game: Game
   gameId: String!
   id: String!
-  nflTeam: NflTeam!
+  nflTeam: NflTeam
   nflTeamId: String!
-  playerTeam: PlayerTeam!
+  playerTeam: PlayerTeam
   playerTeamId: String!
   week: Int!
 }
@@ -106,13 +126,13 @@ type Pick {
 type PlayerTeam {
   active: Boolean!
   id: String!
-  league: League!
+  league: League
   leagueId: String!
   name: String!
   paid: Boolean!
   picks: [Pick!]!
   streak: Int!
-  user: User!
+  user: User
   userId: String!
 }
 
@@ -122,7 +142,6 @@ input PostCreateInput {
 }
 
 type Query {
-  adminMessages: [AdminMessage]!
   adminMessagesGetVisible: [AdminMessage]!
   gamesByWeek(week: Int): [Game]!
   leagues: [League]!
@@ -146,7 +165,7 @@ type Stadium {
 }
 
 type User {
-  adminMessages: [AdminMessage!]!
+  adminMessages: [AdminMessage]!
   email: String!
   id: String!
   name: String
@@ -164,11 +183,11 @@ type UserMessage {
   createdAt: DateTime!
   id: String!
   message: String!
-  messageType: UserMessageType!
+  messageType: UserMessageType
   read: Boolean!
   readDate: DateTime!
   typeId: String!
-  user: User!
+  user: User
   userId: String!
 }
 

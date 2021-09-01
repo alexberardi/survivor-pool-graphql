@@ -1,5 +1,4 @@
-import { ApolloError } from 'apollo-server'
-import { context, Context } from '../context'
+import { Context } from '../context'
 import { UserInputError } from 'apollo-server'
 import { LeagueTypeService } from './leagueType'
 

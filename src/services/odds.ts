@@ -17,13 +17,13 @@ export class OddsService {
           where: { espnGameId: parseInt(competition.id) },
           update: {
             espnGameId: parseInt(competition.id),
-            details: competition.odds[0].details ?? '',
-            overUnder: competition.odds[0].overUnder ?? 0,
+            details: competition.odds ? competition.odds[0].details : '',
+            overUnder: competition.odds ? competition.odds[0].overUnder : 0,
           },
           create: {
             espnGameId: parseInt(competition.id),
-            details: competition.odds[0].details,
-            overUnder: competition.odds[0].overUnder,
+            details: competition.odds ? competition.odds[0].details : '',
+            overUnder: competition.odds ? competition.odds[0].overUnder : 0,
           },
         })
       }
