@@ -1,13 +1,22 @@
-import axios from 'axios'
+import axios, { AxiosResponse } from 'axios'
 import { Context } from '../context'
 import { INflEndpointResponse } from '../espn/responseTypes'
 import { NFL_SCOREBOARD_ENDPOINT } from '../espn/constants'
+import { ApolloError } from 'apollo-server'
 
 export class OddsService {
-  static upsertOdds = async (context: Context) => {
-    const response = await axios.get<INflEndpointResponse>(
-      NFL_SCOREBOARD_ENDPOINT,
-    )
+  static upsertOdds = async (
+    context: Context,
+    response: AxiosResponse<INflEndpointResponse> | null,
+  ) => {
+    if (!response) {
+      response = await axios.get<INflEndpointResponse>(NFL_SCOREBOARD_ENDPOINT)
+    }
+
+    if (!response || !response.data) {
+      throw new ApolloError('Odds upsert broken')
+    }
+
     const events = response.data.events
 
     for (const event of events) {

@@ -12,14 +12,13 @@ export class GameService {
     const currentWeek =
       (await context.prisma.game.aggregate({ _max: { week: true } })) ?? 0
 
-    console.log(currentWeek._max.week)
-
-    await NflTeamService.upsertTeams(context)
-    await StadiumService.upsertStadiums(context)
-    await OddsService.upsertOdds(context)
     const response = await axios.get<INflEndpointResponse>(
       NFL_SCOREBOARD_ENDPOINT,
     )
+
+    await NflTeamService.upsertTeams(context, response)
+    await StadiumService.upsertStadiums(context, response)
+    await OddsService.upsertOdds(context, response)
 
     const week = response.data.week.number
     const events = response.data.events

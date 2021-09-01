@@ -133,7 +133,7 @@ const Mutation = objectType({
     t.list.nonNull.field('nflTeamsPopulate', {
       type: 'NflTeam',
       resolve: async (_, args, context: Context) => {
-        return await NflTeamService.upsertTeams(context)
+        return await NflTeamService.upsertTeams(context, null)
       },
     })
     t.list.nonNull.field('gamesUpdate', {
@@ -192,7 +192,7 @@ const Mutation = objectType({
     t.list.nonNull.field('stadiumsPopulate', {
       type: 'Stadium',
       resolve: async (_, args, context: Context) => {
-        return await StadiumService.upsertStadiums(context)
+        return await StadiumService.upsertStadiums(context, null)
       },
     })
 
