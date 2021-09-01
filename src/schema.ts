@@ -305,7 +305,7 @@ const Game = objectType({
     t.nonNull.string('awayTeamId')
     t.nonNull.int('awayTeamScore')
     t.nonNull.string('dayOfWeek')
-    t.date('gameDate')
+    t.nonNull.field('gameDate', { type: 'DateTime' })
     t.nonNull.string('quarter')
     t.nonNull.string('quarterTime')
     t.nonNull.int('week')
@@ -620,9 +620,9 @@ const UserMessage = objectType({
     t.nonNull.string('id')
     t.nonNull.string('message')
     t.nonNull.string('typeId')
-    t.nonNull.date('createdAt')
+    t.nonNull.field('createdAt', { type: 'DateTime' })
     t.nonNull.boolean('read')
-    t.nonNull.date('readDate')
+    t.nonNull.field('readDate', { type: 'DateTime' })
     t.nonNull.string('userId')
     t.field('messageType', {
       type: 'UserMessageType',
