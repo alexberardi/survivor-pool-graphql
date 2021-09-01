@@ -21,7 +21,6 @@ import { PlayerTeamService } from './services/playerTeam'
 import { PickService } from './services/pick'
 import { AdminMessageService } from './services/adminMessage'
 import { LeagueService } from './services/league'
-import { ApolloError } from 'apollo-server'
 export const DateTime = asNexusMethod(DateTimeResolver, 'date')
 
 const Query = objectType({
@@ -306,7 +305,7 @@ const Game = objectType({
     t.nonNull.string('awayTeamId')
     t.nonNull.int('awayTeamScore')
     t.nonNull.string('dayOfWeek')
-    t.nonNull.date('gameDate')
+    t.date('gameDate')
     t.nonNull.string('quarter')
     t.nonNull.string('quarterTime')
     t.nonNull.int('week')
