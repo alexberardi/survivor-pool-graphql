@@ -22,7 +22,7 @@ type Game {
   awayTeamScore: Int!
   dayOfWeek: String!
   espnGameId: Int!
-  gameDate: DateTime
+  gameDate: DateTime!
   homeTeam: NflTeam
   homeTeamId: String!
   homeTeamScore: Int!
